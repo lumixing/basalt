@@ -1,5 +1,18 @@
 package basalt
 
+import "core:encoding/endian"
+
+encode_i64 :: proc(value: i64) -> (buffer: []u8) {
+	buffer_dynamic := make([]u8, size_of(i64))
+
+	ok := endian.put_i64(buffer_dynamic[:], .Big, value)
+	assert(ok)
+
+	buffer = buffer_dynamic[:]
+
+	return
+}
+
 encode_string :: proc(value: string) -> (buffer: []u8) {
 	buffer_dynamic: [dynamic]u8
 

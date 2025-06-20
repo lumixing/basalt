@@ -113,6 +113,23 @@ handle_client :: proc(thread_data: ^HandleClientData) {
 			}
 			log.debug(res)
 			res_packet := cbp_encode(res)
+			defer delete(res_packet)
+			
+			bytes_sent, send_err := net.send_tcp(thread_data.client_socket, res_packet[:])
+			if send_err != nil {
+				log.error("Could not send data:", send_err)
+				break
+			}
+
+			log.debugf("Sending %d bytes", bytes_sent)
+			log.debug(res_packet[:bytes_sent])
+		case SBP_Ping:
+			res := CBP_Pong {
+				payload = p.payload,
+			}
+			log.debug(res)
+			res_packet := cbp_encode(res)
+			defer delete(res_packet)
 			
 			bytes_sent, send_err := net.send_tcp(thread_data.client_socket, res_packet[:])
 			if send_err != nil {

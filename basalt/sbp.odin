@@ -6,6 +6,7 @@ import "core:log"
 ServerBoundPacket :: union #no_nil {
 	SBP_Handshake,
 	SBP_Request,
+	SBP_Ping,
 }
 
 // https://minecraft.wiki/w/Protocol?oldid=2772100#Handshaking
@@ -18,6 +19,11 @@ SBP_Handshake :: struct {
 
 // https://minecraft.wiki/w/Protocol?oldid=2772100#Request
 SBP_Request :: struct {}
+
+// https://minecraft.wiki/w/Protocol?oldid=2772100#Ping
+SBP_Ping :: struct {
+	payload: i64,
+}
 
 HandshakeResponse :: struct {
 	version: struct {
@@ -62,6 +68,10 @@ sbp_decode :: proc(buffer: []u8) -> (sbp: ServerBoundPacket, err: DecodeError) {
 		switch packet_raw.id {
 		case 0x00:
 			sbp = SBP_Request{}
+		case 0x01:
+			sbp = SBP_Ping {
+				payload = decode_i64(packet_raw.buffer, &packet_offset) or_return,
+			}
 		}
 	}
 

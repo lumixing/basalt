@@ -47,6 +47,22 @@ decode_u16 :: proc(buffer: []u8, offset: ^uint) -> (value: u16, err: DecodeError
 	return
 }
 
+decode_i64 :: proc(buffer: []u8, offset: ^uint) -> (value: i64, err: DecodeError) {
+	decode_check_offset(buffer, offset^) or_return
+
+	ok: bool
+	value, ok = endian.get_i64(buffer[offset^:][:size_of(i64)], .Big)
+
+	if !ok {
+		err = .InvalidEndian
+		return
+	}
+
+	offset^ += size_of(i64)
+
+	return
+}
+
 decode_string :: proc(buffer: []u8, offset: ^uint) -> (value: string, err: DecodeError) {
 	decode_check_offset(buffer, offset^) or_return
 
