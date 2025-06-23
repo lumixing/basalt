@@ -1,6 +1,7 @@
 package basalt
 
 import "core:fmt"
+import "core:reflect"
 
 import im "../odin-imgui"
 import "../odin-imgui/imgui_impl_glfw"
@@ -51,6 +52,7 @@ ui_init :: proc() {
 	}
 
 	im.StyleColorsLight()
+	// im.StyleColorsDark()
 
 	imgui_impl_glfw.InitForOpenGL(window, true)
 	imgui_impl_opengl3.Init("#version 150")
@@ -97,12 +99,58 @@ ui_loop :: proc() {
 		}
 		im.End()
 
+		if im.Begin("packets") {
+			if im.BeginChild("scrolling", window_flags = {.HorizontalScrollbar}) {
+				for p, p_idx in packets {
+					switch pp in p {
+					case ServerBoundPacket:
+						tt := reflect.union_variant_type_info(pp)
+						name := fmt.ctprintf("%s", tt)
+						// im.Text(fmt.ctprintf("recv %v", p))
+						id := fmt.ctprintf("p%d", p_idx)
+						im.PushID(id)
+						if im.TreeNode(name) {
+							for field in reflect.struct_fields_zipped(tt.id) {
+								im.Text(fmt.ctprintf("%s -> %v", field.name, reflect.struct_field_value(p, field)))
+							}
+							im.TreePop()
+						}
+						im.PopID()
+					case ClientBoundPacket:
+						tt := reflect.union_variant_type_info(pp)
+						name := fmt.ctprintf("%s", tt)
+						// im.Text(fmt.ctprintf("recv %v", p))
+						id := fmt.ctprintf("p%d", p_idx)
+						im.PushID(id)
+						if im.TreeNode(name) {
+							for field in reflect.struct_fields_zipped(tt.id) {
+								im.Text(fmt.ctprintf("%s -> %v", field.name, reflect.struct_field_value(p, field)))
+							}
+							im.TreePop()
+						}
+						im.PopID()
+					}
+				}
+			}
+			if im.GetScrollY() >= im.GetScrollMaxY() {
+				im.SetScrollHereY(1)
+			}
+			im.EndChild()
+		}
+		im.End()
+
 		if im.Begin("clients") {
 			im.Text("%d clients", len(clients))
 			im.Separator()
 			if im.BeginChild("clients_scrol", window_flags = {.HorizontalScrollbar}) {
 				for client_end, client in clients {
-					im.Text("%ld (%d.%d.%d.%d:%d)", client_end, client_end.ip0, client_end.ip1, client_end.ip2, client_end.ip3, client_end.port)
+					if im.TreeNode(fmt.ctprintf("%v (%d.%d.%d.%d:%d)", u64(client_end), client_end.ip0, client_end.ip1, client_end.ip2, client_end.ip3, client_end.port)) {
+						// im.Text("state -> %s", fmt.ctprintf("%s", client.state))
+						for field in reflect.struct_fields_zipped(Client) {
+							im.Text(fmt.ctprintf("%s -> %v", field.name, reflect.struct_field_value(client^, field)))
+						}
+						im.TreePop()
+					}
 				}
 			}
 			if im.GetScrollY() >= im.GetScrollMaxY() {

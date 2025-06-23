@@ -65,3 +65,6 @@ lassert :: proc(cond: bool, args: ..any, level := LogLevel.FATAL) -> bool {
 
 ldebug :: proc(args: ..any) { llog(.DEBUG, ..args) }
 linfo  :: proc(args: ..any) { llog(.INFO,  ..args) }
+lwarn  :: proc(args: ..any) { llog(.WARN,  ..args) }
+lerror :: proc(args: ..any) { llog(.ERROR, ..args) }
+lfatal :: proc(args: ..any) { llog(.FATAL, ..args) }
