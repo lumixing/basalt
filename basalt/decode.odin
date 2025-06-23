@@ -63,7 +63,7 @@ decode_varint :: proc(buffer: []u8, offset: ^uint) -> Maybe(varint) {
 		value_raw |= cast(u32)(current_byte & 0x7F) << cast(u32)(position * 7)
 
 		if (current_byte & 0x80) == 0 {
-			return cast(i32)value_raw
+			return cast(varint)value_raw
 		}
 
 		position += 1

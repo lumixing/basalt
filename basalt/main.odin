@@ -4,6 +4,7 @@ import "core:fmt"
 import "core:net"
 import "core:thread"
 import "core:encoding/json"
+import "core:math/noise"
 
 RECV_BUFFER_SIZE :: 4096
 VERSION          :: "1.8.9"
@@ -160,6 +161,118 @@ handle_client :: proc(client_socket: net.TCP_Socket, client_end: ClientEndpoint)
 				clients[client_end].packets_sent += 1
 				clients[client_end].bytes_sent += uint(bytes_sent)
 			}
+		case .Login:
+			switch packet.id {
+			case 0x00:
+				sbp := sbp_decode(SBP_LoginStart, packet.data)
+				append(&packets, ServerBoundPacket(sbp))
+
+				packet_send(client_socket, client_end, CBP_LoginSuccess {
+					uuid     = "c1724db6-9479-4aeb-90cb-00ab8a1d2a91",
+					username = sbp.name,
+				})
+
+				clients[client_end].username = sbp.name
+				clients[client_end].uuid = "c1724db6-9479-4aeb-90cb-00ab8a1d2a91"
+				clients[client_end].state = .Play
+
+				packet_send(client_socket, client_end, CBP_JoinGame {
+					entity_id = 69,
+					gamemode = 1,
+					dimension = 0,
+					difficulty = 3,
+					max_players = 69,
+					level_type = "default",
+					reduced_debug_info = false,
+				})
+
+				packet_send(client_socket, client_end, CBP_PlayerPositionAndLook {
+					x = 32,
+					y = 128,
+					z = 32,
+					yaw = 0,
+					pitch = 0,
+					flags = 0,
+				})
+
+				chunk_data: [dynamic]u8
+				defer delete(chunk_data)
+
+				// block ids
+				CHUNK_SECTIONS :: 16
+				for i in 0..<4096*CHUNK_SECTIONS {
+					type := 0
+					metadata := 0
+
+					// For i in 0..<16*16*16*16 (total chunk size)
+					section := i / (16*16*16)           // Which 16-block section (0-15)
+					block_in_section := i % (16*16*16)  // Block index within that section
+
+					// Within the section, blocks are in Y,Z,X order
+					section_y := block_in_section / (16*16)     // Y within section (0-15)  
+					section_zx := block_in_section % (16*16)    // Remaining Z,X index
+					z := section_zx / 16                        // Z coordinate (0-15)
+					x := section_zx % 16                        // X coordinate (0-15)
+
+					// Final world coordinates
+					world_y := section * 16 + section_y         // Absolute Y (0-255)
+					world_x := x                                // X within chunk (0-15)
+					world_z := z                                // Z within chunk (0-15)
+
+					v := noise.noise_3d_improve_xz(0, {f64(world_x), f64(world_y), f64(world_z)}/25)
+					if v < 0 {
+						type = 1
+					}
+
+					append(&chunk_data, u8((type << 4) | metadata))
+					append(&chunk_data, u8(type >> 4))
+				}
+
+				encode_varint(&chunk_data, 8) // both arrays
+				encode_varint(&chunk_data, 16*16*16*2) // Varint of both array's total elements 
+
+				// block light
+				for _ in 0..<2048*CHUNK_SECTIONS {
+					append(&chunk_data, 0)
+				}
+
+				// sky light
+				for _ in 0..<2048*CHUNK_SECTIONS {
+					append(&chunk_data, 0xFF)
+				}
+
+				// biomes
+				for _ in 0..<256 {
+					append(&chunk_data, 1)
+				}
+
+				packet_send(client_socket, client_end, CBP_ChunkData {
+					chunk_x = 0,
+					chunk_z = 0,
+					ground_up = true,
+					primary_bitmask = 0xFFFF,
+					size = varint(len(chunk_data)),
+					data = chunk_data[:],
+				})
+
+				packet_send(client_socket, client_end, CBP_ChatMessage {
+					json_data = fmt.tprintf(`{{"text":"welcome, %s!!1"}}`, clients[client_end].username),
+					position = 0,
+				})
+			}
 		}
 	}
+}
+
+packet_send :: proc(client_socket: net.TCP_Socket, client_end: ClientEndpoint, cbp: ClientBoundPacket) {
+	append(&packets, cbp)
+				
+	buf := packet_encode(cbp_encode(cbp))
+	defer delete(buf)
+	ldebug("sent", buf)
+
+	bytes_sent, send_err := net.send_tcp(client_socket, buf[:])
+	lassert(send_err == nil, "could not send data:", send_err)
+	clients[client_end].packets_sent += 1
+	clients[client_end].bytes_sent += uint(bytes_sent)
 }

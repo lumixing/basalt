@@ -8,6 +8,7 @@ ServerBoundPacket :: union #no_nil {
 	SBP_Handshake,
 	SBP_Request,
 	SBP_Ping,
+	SBP_LoginStart,
 }
 
 // https://minecraft.wiki/w/Protocol?oldid=2772100#Handshake
@@ -24,6 +25,11 @@ SBP_Request :: struct {}
 // https://minecraft.wiki/w/Protocol?oldid=2772100#Ping
 SBP_Ping :: struct {
 	payload: i64,
+}
+
+// https://minecraft.wiki/w/Protocol?oldid=2772100#Login_Start
+SBP_LoginStart :: struct {
+	name: string,
 }
 
 sbp_decode :: proc($T: typeid, data: []u8) -> T

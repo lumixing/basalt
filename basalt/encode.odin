@@ -28,9 +28,41 @@ encode_string :: proc(buffer: ^[dynamic]u8, value: string) {
 	append(buffer, ..transmute([]u8)value)
 }
 
+encode_bool :: proc(buffer: ^[dynamic]u8, value: bool) {
+	append(buffer, value ? 0x01 : 0x00)
+}
+
+encode_u16 :: proc(buffer: ^[dynamic]u8, value: u16) {
+	temp_buf: [size_of(u16)]u8
+	ok := endian.put_u16(temp_buf[:], .Big, value)
+	assert(ok)
+	append(buffer, ..temp_buf[:])
+}
+
+encode_i32 :: proc(buffer: ^[dynamic]u8, value: i32) {
+	temp_buf: [size_of(i32)]u8
+	ok := endian.put_i32(temp_buf[:], .Big, value)
+	assert(ok)
+	append(buffer, ..temp_buf[:])
+}
+
 encode_i64 :: proc(buffer: ^[dynamic]u8, value: i64) {
 	temp_buf: [size_of(i64)]u8
 	ok := endian.put_i64(temp_buf[:], .Big, value)
+	assert(ok)
+	append(buffer, ..temp_buf[:])
+}
+
+encode_f32 :: proc(buffer: ^[dynamic]u8, value: f32) {
+	temp_buf: [size_of(f32)]u8
+	ok := endian.put_f32(temp_buf[:], .Big, value)
+	assert(ok)
+	append(buffer, ..temp_buf[:])
+}
+
+encode_f64 :: proc(buffer: ^[dynamic]u8, value: f64) {
+	temp_buf: [size_of(f64)]u8
+	ok := endian.put_f64(temp_buf[:], .Big, value)
 	assert(ok)
 	append(buffer, ..temp_buf[:])
 }

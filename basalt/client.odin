@@ -23,9 +23,11 @@ Client :: struct {
 	bytes_recv: uint,
 	packets_sent: uint,
 	bytes_sent: uint,
+	username: string,
+	uuid: string,
 }
 
-varint :: i32
+varint :: distinct i32
 
 State :: enum varint {
 	Handshake = 0,
