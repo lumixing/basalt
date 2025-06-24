@@ -9,6 +9,7 @@ ServerBoundPacket :: union #no_nil {
 	SBP_Request,
 	SBP_Ping,
 	SBP_LoginStart,
+	SBP_KeepAlive,
 }
 
 // https://minecraft.wiki/w/Protocol?oldid=2772100#Handshake
@@ -30,6 +31,11 @@ SBP_Ping :: struct {
 // https://minecraft.wiki/w/Protocol?oldid=2772100#Login_Start
 SBP_LoginStart :: struct {
 	name: string,
+}
+
+// https://minecraft.wiki/w/Protocol?oldid=2772100#Keep_Alive_2
+SBP_KeepAlive :: struct {
+	id: varint,
 }
 
 sbp_decode :: proc($T: typeid, data: []u8) -> T

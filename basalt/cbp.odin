@@ -10,6 +10,7 @@ ClientBoundPacket :: union #no_nil {
 	CBP_ChunkData,
 	CBP_PlayerPositionAndLook,
 	CBP_ChatMessage,
+	CBP_KeepAlive,
 }
 
 // https://minecraft.wiki/w/Protocol?oldid=2772100#Response
@@ -65,11 +66,17 @@ CBP_ChatMessage :: struct {
 	position:  i8,
 }
 
+// https://minecraft.wiki/w/Protocol?oldid=2772100#Keep_Alive
+CBP_KeepAlive :: struct {
+	id: varint,
+}
+
 cbp_id :: proc(cbp: ClientBoundPacket) -> varint {
 	switch _ in cbp {
 	case CBP_Response:     return 0x00
 	case CBP_Pong:         return 0x01
 	case CBP_LoginSuccess: return 0x02
+	case CBP_KeepAlive:    return 0x00
 	case CBP_JoinGame:     return 0x01
 	case CBP_ChatMessage:  return 0x02
 	case CBP_ChunkData:    return 0x21
